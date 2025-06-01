@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContriFest - Gamified Open Source Contribution Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom CSS for features Tailwind can't handle easily */
+        .gradient-bg {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+        }
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #4b5563, #1f2937);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .dark .card-hover:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .typewriter {
+            overflow: hidden;
+            border-right: .15em solid #a777e3;
+            white-space: nowrap;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #a777e3; }
+        }
+        .chat-message {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        .chat-message.active {
+            max-height: 200px;
+            opacity: 1;
+        }
+        #typing-indicator {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-200">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-lg transition-colors duration-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-code-branch text-primary-600 dark:text-primary-400 text-2xl mr-2"></i>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">ContriFest</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="#" class="border-primary-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" onclick="showSection('dashboard')">
+                            Dashboard
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" onclick="showSection('projects')">
+                            Projects
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" onclick="showSection('community')">
+                            Community
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" onclick="showSection('learn')">
+                            Learn
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-moon text-gray-700 dark:hidden"></i>
+                        <i class="fas fa-sun text-yellow-300 hidden dark:inline"></i>
+                    </button>
+                    <div class="ml-3 relative">
+                        <div>
+                            <button type="button" class="bg-white dark:bg-gray-700 rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                                <span class="sr-only">Open user menu</span>
+                                <img class="h-8 w-8 rounded-full" src="https://avatars.githubusercontent.com/u/168094736?v=4" alt="">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="gradient-bg text-white py-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="md:w-1/2">
+                    <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+                        <span class="block">Level Up Your</span>
+                        <span class="block text-primary-200 dark:text-primary-300">Open Source Journey</span>
+                    </h1>
+                    <p class="mt-3 max-w-md text-lg sm:text-xl md:mt-5 md:max-w-3xl">
+                        ContriFest gamifies open source contributions with achievements, mentorship, and community.
+                    </p>
+                    <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                        <button onclick="showSection('dashboard')" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 dark:text-primary-900 bg-white hover:bg-primary-50 dark:hover:bg-gray-100 md:py-4 md:text-lg md:px-10">
+                            Get Started
+                        </button>
+                        <button onclick="showSection('learn')" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 bg-opacity-60 hover:bg-opacity-70 md:py-4 md:text-lg md:px-10">
+                            Take the Tour
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-12 md:mt-0 md:w-1/2 flex justify-center">
+                    <div class="relative">
+                        <div class="absolute -top-8 -left-8 w-32 h-32 bg-primary-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse-slow"></div>
+                        <div class="absolute -bottom-8 -right-8 w-32 h-32 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse-slow animation-delay-2000"></div>
+                        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-80">
+                            <div class="flex items-center mb-4">
+                                <img class="h-10 w-10 rounded-full" src="https://avatars.githubusercontent.com/u/168094736?v=4" alt="">
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">Puneet Tiwari</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Level 7 Contributor</p>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                    <span>XP to next level</span>
+                                    <span>750/1000</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-primary-600 h-2.5 rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mb-4">
+                                <div class="bg-primary-100 dark:bg-primary-900 rounded p-2 text-center">
+                                    <div class="text-primary-800 dark:text-primary-200 font-bold">24</div>
+                                    <div class="text-xs text-primary-600 dark:text-primary-400">PRs</div>
+                                </div>
+                                <div class="bg-blue-100 dark:bg-blue-900 rounded p-2 text-center">
+                                    <div class="text-blue-800 dark:text-blue-200 font-bold">8</div>
+                                    <div class="text-xs text-blue-600 dark:text-blue-400">Badges</div>
+                                </div>
+                                <div class="bg-green-100 dark:bg-green-900 rounded p-2 text-center">
+                                    <div class="text-green-800 dark:text-green-200 font-bold">3</div>
+                                    <div class="text-xs text-green-600 dark:text-green-400">Projects</div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-trophy text-yellow-500 mr-1"></i> Top 10% in Documentation
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Sections -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Dashboard Section (Default Visible) -->
+        <div id="dashboard-section" class="space-y-12">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Your Contribution Dashboard</h2>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Last updated: Just now</span>
+                    <button class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-sync-alt text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition duration-300 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 mr-4">
+                            <i class="fas fa-code text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Contributions</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">142</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition duration-300 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 mr-4">
+                            <i class="fas fa-medal text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Level</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">7</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition duration-300 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 mr-4">
+                            <i class="fas fa-star text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">XP Points</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">750</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition duration-300 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 mr-4">
+                            <i class="fas fa-trophy text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Leaderboard Rank</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">#42</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress and Badges -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- XP Progress -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-1">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Level Progress</h3>
+                    <div class="flex justify-center">
+                        <div class="relative w-32 h-32">
+                            <svg class="w-full h-full" viewBox="0 0 100 100">
+                                <circle class="text-gray-200 dark:text-gray-700" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                                <circle class="text-primary-600 progress-ring__circle" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="62.8" />
+                            </svg>
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                <span class="text-3xl font-bold text-gray-900 dark:text-white">7</span>
+                                <span class="block text-sm text-gray-500 dark:text-gray-400">Level</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            <span>XP to next level</span>
+                            <span>750/1000</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                            <div class="bg-primary-600 h-2.5 rounded-full" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Badges -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Your Badges</h3>
+                        <a href="#" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">View all</a>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="bg-yellow-100 dark:bg-yellow-900 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-medal text-yellow-500 dark:text-yellow-400 text-2xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">First PR</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-blue-100 dark:bg-blue-900 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-book text-blue-500 dark:text-blue-400 text-2xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Doc Master</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-green-100 dark:bg-green-900 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-bug text-green-500 dark:text-green-400 text-2xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Bug Hunter</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-primary-100 dark:bg-primary-900 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-code-merge text-primary-500 dark:text-primary-400 text-2xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Merger</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contribution Roadmaps -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Contribution Roadmaps</h3>
+                    <a href="#" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">View all paths</a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-300 dark:hover:border-primary-500 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Beginner</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">First-Time Contributors</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Start your open source journey with these beginner-friendly tasks.</p>
+                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                            <span>3/8 completed</span>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-300 dark:hover:border-primary-500 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Intermediate</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Documentation Specialist</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Improve project documentation and help others understand the codebase.</p>
+                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                            <span>5/12 completed</span>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-300 dark:hover:border-primary-500 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Advanced</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Core Maintainer</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Take on more responsibility by reviewing PRs and mentoring others.</p>
+                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                            <span>1/15 completed</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Mentor Bot -->
+            <div class="bg-gradient-to-r from-primary-500 to-blue-500 rounded-lg shadow p-6 text-white">
+                <div class="flex items-start">
+                    <div class="mr-4">
+                        <div class="bg-white bg-opacity-20 rounded-full w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium mb-2">AI-Powered Mentor Bot</h3>
+                        <p class="mb-4">Get personalized guidance based on your skills and interests.</p>
+                        
+                        <!-- Chat Container -->
+                        <div id="chat-container" class="mb-4 space-y-3 max-h-96 overflow-y-auto pr-2">
+                            <!-- Initial bot message -->
+                            <div class="flex items-start">
+                                <div class="mr-3">
+                                    <div class="bg-white bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center">
+                                        <i class="fas fa-robot text-xs"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm">Hi there! I'm your ContriFest mentor. How can I help you with your open source journey today?</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Typing indicator -->
+                            <div id="typing-indicator" class="flex items-start">
+                                <div class="mr-3">
+                                    <div class="bg-white bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center">
+                                        <i class="fas fa-robot text-xs"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex space-x-1">
+                                        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                                        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                                        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick action buttons -->
+                        <div id="quick-actions" class="flex flex-wrap gap-2 mb-4">
+                            <button onclick="askMentor('Find beginner-friendly projects')" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-xs px-3 py-1 rounded-full transition duration-200">
+                                Find beginner projects
+                            </button>
+                            <button onclick="askMentor('Help with Git commands')" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-xs px-3 py-1 rounded-full transition duration-200">
+                                Git help
+                            </button>
+                            <button onclick="askMentor('Review my recent PR')" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-xs px-3 py-1 rounded-full transition duration-200">
+                                PR review
+                            </button>
+                        </div>
+                        
+                        <!-- Input area -->
+                        <div class="relative">
+                            <input 
+                                id="mentor-input" 
+                                type="text" 
+                                placeholder="Ask the mentor bot anything..." 
+                                class="w-full bg-white bg-opacity-20 rounded-full py-2 px-4 pr-10 text-sm placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                onkeypress="if(event.key === 'Enter') sendMessage()"
+                            >
+                            <button onclick="sendMessage()" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Section (Hidden by default) -->
+        <div id="projects-section" class="space-y-12 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900">Project Wall</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                            <option>Filter by category</option>
+                            <option>Documentation</option>
+                            <option>Frontend</option>
+                            <option>Backend</option>
+                            <option>Design</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                    <button class="p-2 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-sliders-h text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Project Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow overflow-hidden transition duration-300 card-hover">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <img src="https://github.com/tailwindlabs/tailwindcss/raw/master/.github/logo-light.svg" alt="Tailwind CSS" class="w-10 h-10 rounded mr-3">
+                            <div>
+                                <h3 class="font-medium text-gray-900">Tailwind CSS</h3>
+                                <p class="text-sm text-gray-500">A utility-first CSS framework</p>
+                            </div>
+                            <button class="ml-auto text-gray-400 hover:text-purple-500">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">Help improve documentation, fix bugs, or add new features to this popular CSS framework.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">CSS</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">JavaScript</span>
+                            <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Frontend</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">32.4k</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-code-branch text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">142 issues</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user-friends text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">24 contributors</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden transition duration-300 card-hover">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <img src="https://d33wubrfki0l68.cloudfront.net/0834d0215db51e91525a25acf97433051f280f2f/c30f5/img/redux.svg" alt="Redux" class="w-10 h-10 rounded mr-3">
+                            <div>
+                                <h3 class="font-medium text-gray-900">Redux</h3>
+                                <p class="text-sm text-gray-500">Predictable state container</p>
+                            </div>
+                            <button class="ml-auto text-purple-500">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">Help improve the Redux core library, documentation, or create educational materials.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">JavaScript</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">State Management</span>
+                            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">React</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">55.7k</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-code-branch text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">89 issues</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user-friends text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">18 contributors</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden transition duration-300 card-hover">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <img src="https://vitejs.dev/logo.svg" alt="Vite" class="w-10 h-10 rounded mr-3">
+                            <div>
+                                <h3 class="font-medium text-gray-900">Vite</h3>
+                                <p class="text-sm text-gray-500">Next generation frontend tooling</p>
+                            </div>
+                            <button class="ml-auto text-gray-400 hover:text-purple-500">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">Help build the future of frontend tooling with this blazing fast build tool.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">JavaScript</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">TypeScript</span>
+                            <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Build Tools</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">28.9k</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-code-branch text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">156 issues</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user-friends text-gray-400 mr-1"></i>
+                            <span class="text-sm text-gray-600">42 contributors</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Micro-Internship Board -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Micro-Internship Opportunities</h3>
+                    <a href="#" class="text-sm font-medium text-purple-600 hover:text-purple-500">View all</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skills</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apply By</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded" src="https://github.com/tailwindlabs/tailwindcss/raw/master/.github/logo-light.svg" alt="">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Tailwind CSS</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Docs Specialist</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">3 weeks</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-1">
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Markdown</span>
+                                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">CSS</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    Jun 15, 2023
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="#" class="text-purple-600 hover:text-purple-900">Apply</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded" src="https://vitejs.dev/logo.svg" alt="">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Vite</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Plugin Developer</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">4 weeks</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-1">
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">JavaScript</span>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">TypeScript</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    Jun 20, 2023
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="#" class="text-purple-600 hover:text-purple-900">Apply</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Section (Hidden by default) -->
+     
+             <!-- Community Section (Hidden by default) -->
+        <div id="community-section" class="space-y-12 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900">ContriVerse Community</h2>
+                <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                    <i class="fas fa-plus mr-2"></i> New Post
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Forum Categories -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Categories</h3>
+                        <ul class="space-y-2">
+                            <li>
+                                <a href="#" class="flex items-center p-2 rounded-md hover:bg-gray-50">
+                                    <div class="bg-purple-100 text-purple-800 p-2 rounded-full mr-3">
+                                        <i class="fas fa-code-branch"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Getting Started</p>
+                                        <p class="text-xs text-gray-500">Help for first-time contributors</p>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="flex items-center p-2 rounded-md hover:bg-gray-50">
+                                    <div class="bg-blue-100 text-blue-800 p-2 rounded-full mr-3">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Looking for Help</p>
+                                        <p class="text-xs text-gray-500">Find collaborators for your projects</p>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="flex items-center p-2 rounded-md hover:bg-gray-50">
+                                    <div class="bg-green-100 text-green-800 p-2 rounded-full mr-3">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Ideas & Feedback</p>
+                                        <p class="text-xs text-gray-500">Share your project ideas</p>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="flex items-center p-2 rounded-md hover:bg-gray-50">
+                                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded-full mr-3">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Success Stories</p>
+                                        <p class="text-xs text-gray-500">Share your contribution journey</p>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Contributor Spotlight -->
+                    <div class="bg-white rounded-lg shadow p-6 mt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Contributor Spotlight</h3>
+                        <div class="flex items-center mb-4">
+                            <img class="h-12 w-12 rounded-full" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                            <div class="ml-3">
+                                <p class="font-medium text-gray-900">Sarah Johnson</p>
+                                <p class="text-sm text-gray-500">Level 12 Contributor</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">"ContriFest helped me go from complete beginner to core contributor in just 6 months!"</p>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>42 PRs merged</span>
+                            <span>8 projects</span>
+                            <span>3 micro-internships</span>
+                        </div>
+                        <button class="w-full mt-4 bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2 rounded-md text-sm font-medium">
+                            View Portfolio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Forum Posts -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
+                            <h3 class="text-lg font-medium text-gray-900">Recent Discussions</h3>
+                            <div class="flex space-x-2">
+                                <button class="p-2 rounded-full hover:bg-gray-200">
+                                    <i class="fas fa-filter text-gray-500"></i>
+                                </button>
+                                <button class="p-2 rounded-full hover:bg-gray-200">
+                                    <i class="fas fa-search text-gray-500"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <ul class="divide-y divide-gray-200">
+                            <li class="px-6 py-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <img class="h-10 w-10 rounded-full mr-4" src="https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="font-medium text-gray-900">Michael Chen</p>
+                                            <span class="text-xs text-gray-500">2 hours ago</span>
+                                        </div>
+                                        <h4 class="text-base font-medium text-gray-900 mt-1">Looking for beginner-friendly issues in React projects</h4>
+                                        <p class="text-sm text-gray-600 mt-1">I'm new to open source and want to contribute to React projects. Any recommendations for good first issues?</p>
+                                        <div class="mt-2 flex items-center text-xs text-gray-500">
+                                            <span class="inline-flex items-center mr-3">
+                                                <i class="far fa-comment mr-1"></i> 12
+                                            </span>
+                                            <span class="inline-flex items-center">
+                                                <i class="far fa-heart mr-1"></i> 24
+                                            </span>
+                                            <span class="ml-auto bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                                Getting Started
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="px-6 py-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <img class="h-10 w-10 rounded-full mr-4" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="font-medium text-gray-900">David Wilson</p>
+                                            <span class="text-xs text-gray-500">5 hours ago</span>
+                                        </div>
+                                        <h4 class="text-base font-medium text-gray-900 mt-1">Need help with documentation for my open source project</h4>
+                                        <p class="text-sm text-gray-600 mt-1">I've built a utility library but need help with writing proper documentation. Any volunteers?</p>
+                                        <div class="mt-2 flex items-center text-xs text-gray-500">
+                                            <span class="inline-flex items-center mr-3">
+                                                <i class="far fa-comment mr-1"></i> 8
+                                            </span>
+                                            <span class="inline-flex items-center">
+                                                <i class="far fa-heart mr-1"></i> 15
+                                            </span>
+                                            <span class="ml-auto bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                                Looking for Help
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="px-6 py-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <img class="h-10 w-10 rounded-full mr-4" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="font-medium text-gray-900">Emma Rodriguez</p>
+                                            <span class="text-xs text-gray-500">1 day ago</span>
+                                        </div>
+                                        <h4 class="text-base font-medium text-gray-900 mt-1">How I went from beginner to core contributor in 6 months</h4>
+                                        <p class="text-sm text-gray-600 mt-1">Sharing my journey and tips for others who want to become serious open source contributors.</p>
+                                        <div class="mt-2 flex items-center text-xs text-gray-500">
+                                            <span class="inline-flex items-center mr-3">
+                                                <i class="far fa-comment mr-1"></i> 32
+                                            </span>
+                                            <span class="inline-flex items-center">
+                                                <i class="far fa-heart mr-1"></i> 87
+                                            </span>
+                                            <span class="ml-auto bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+                                                Success Stories
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                            <button class="text-sm font-medium text-purple-600 hover:text-purple-500">
+                                View all discussions
+                            </button>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    1
+                                </button>
+                                <button class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    2
+                                </button>
+                                <button class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    3
+                                </button>
+                                <button class="px-3 py-1 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Spotlight -->
+                    <div class="bg-white rounded-lg shadow p-6 mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Weekly Spotlight</h3>
+                            <a href="#" class="text-sm font-medium text-purple-600 hover:text-purple-500">View all</a>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition duration-300">
+                                <div class="flex items-center mb-3">
+                                    <img class="h-8 w-8 rounded-full mr-2" src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">James Wilson</p>
+                                        <p class="text-xs text-gray-500">3 days ago</p>
+                                    </div>
+                                </div>
+                                <h4 class="font-medium text-gray-900 mb-2">How to Write Great Documentation</h4>
+                                <p class="text-sm text-gray-600 mb-3">A comprehensive guide to writing documentation that actually helps developers...</p>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <span class="inline-flex items-center mr-3">
+                                        <i class="far fa-eye mr-1"></i> 245
+                                    </span>
+                                    <span class="inline-flex items-center">
+                                        <i class="far fa-comment mr-1"></i> 18
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition duration-300">
+                                <div class="flex items-center mb-3">
+                                    <img class="h-8 w-8 rounded-full mr-2" src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Lisa Thompson</p>
+                                        <p class="text-xs text-gray-500">1 week ago</p>
+                                    </div>
+                                </div>
+                                <h4 class="font-medium text-gray-900 mb-2">My First Micro-Internship Experience</h4>
+                                <p class="text-sm text-gray-600 mb-3">What I learned from my 4-week micro-internship with an open source project...</p>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <span class="inline-flex items-center mr-3">
+                                        <i class="far fa-eye mr-1"></i> 189
+                                    </span>
+                                    <span class="inline-flex items-center">
+                                        <i class="far fa-comment mr-1"></i> 12
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- Learn Section (Hidden by default) -->
+       <div id="learn-section" class="space-y-12 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900">Learning & Growth</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                            <option>Filter by skill level</option>
+                            <option>Beginner</option>
+                            <option>Intermediate</option>
+                            <option>Advanced</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Code Sprint -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-6 text-white">
+                <div class="md:flex md:items-center md:justify-between">
+                    <div class="md:w-2/3">
+                        <h3 class="text-xl font-bold mb-2">Live Code Sprint Challenge</h3>
+                        <p class="mb-4">Join our weekend coding challenge! Collaborate in teams, solve real problems, and climb the leaderboard.</p>
+                        <div class="flex flex-wrap gap-4">
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3 text-center">
+                                <div class="text-sm">Starts In</div>
+                                <div class="font-bold text-lg">2d 14h</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3 text-center">
+                                <div class="text-sm">Participants</div>
+                                <div class="font-bold text-lg">142</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3 text-center">
+                                <div class="text-sm">Teams</div>
+                                <div class="font-bold text-lg">28</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 md:mt-0 md:w-1/3 flex justify-center">
+                        <button class="bg-white text-purple-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-medium">
+                            Register Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Paths -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Learning Paths</h3>
+                    <a href="#" class="text-sm font-medium text-purple-600 hover:text-purple-500">View all</a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Beginner</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">Git & GitHub Fundamentals</h4>
+                        <p class="text-sm text-gray-600 mb-3">Master the basics of version control and collaboration on GitHub.</p>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <span class="mr-2">5 modules</span>
+                            <span>•</span>
+                            <span class="ml-2">12 hours</span>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Intermediate</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">Open Source Documentation</h4>
+                        <p class="text-sm text-gray-600 mb-3">Learn how to write and improve documentation for open source projects.</p>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <span class="mr-2">4 modules</span>
+                            <span>•</span>
+                            <span class="ml-2">8 hours</span>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition duration-300">
+                        <div class="flex items-center mb-3">
+                            <div class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">Advanced</div>
+                            <i class="fas fa-arrow-right text-gray-400 ml-auto"></i>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">Maintaining OSS Projects</h4>
+                        <p class="text-sm text-gray-600 mb-3">Best practices for managing and growing open source communities.</p>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <span class="mr-2">6 modules</span>
+                            <span>•</span>
+                            <span class="ml-2">15 hours</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Buddy Finder -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="md:flex md:items-center md:justify-between">
+                    <div class="md:w-1/2">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Code Buddy Finder</h3>
+                        <p class="text-sm text-gray-600 mb-4">Find contributors with similar skill levels and goals for paired learning and collaboration.</p>
+                        <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Find a Buddy
+                        </button>
+                    </div>
+                    <div class="mt-6 md:mt-0 md:w-1/2">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center mb-4">
+                                <img class="h-12 w-12 rounded-full mr-4" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                <div>
+                                    <p class="font-medium text-gray-900">Sarah Johnson</p>
+                                    <p class="text-sm text-gray-500">Level 8 • JavaScript • React</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">"Looking for a coding buddy to work through open source contributions together. I'm particularly interested in frontend frameworks."</p>
+                            <button class="w-full bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2 rounded-md text-sm font-medium">
+                                Connect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Generator -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="md:flex md:items-center md:justify-between">
+                    <div class="md:w-1/2">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Portfolio Generator</h3>
+                        <p class="text-sm text-gray-600 mb-4">Automatically build a sleek public portfolio from your merged PRs, issues, blogs, and more.</p>
+                        <div class="flex space-x-4">
+                            <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Generate Portfolio
+                            </button>
+                            <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                                Preview
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-6 md:mt-0 md:w-1/2 flex justify-center">
+                        <div class="relative">
+                            <div class="absolute -inset-2 bg-purple-200 rounded-lg blur opacity-75"></div>
+                            <div class="relative bg-white rounded-lg shadow-lg p-4 w-64">
+                                <div class="flex items-center mb-3">
+                                    <img class="h-10 w-10 rounded-full mr-3" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Alex Johnson</p>
+                                        <p class="text-xs text-gray-500">Level 7 Contributor</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mb-3">
+                                    <div class="bg-purple-100 rounded p-1 text-center">
+                                        <div class="text-purple-800 font-bold text-sm">24</div>
+                                        <div class="text-xs text-purple-600">PRs</div>
+                                    </div>
+                                    <div class="bg-blue-100 rounded p-1 text-center">
+                                        <div class="text-blue-800 font-bold text-sm">8</div>
+                                        <div class="text-xs text-blue-600">Projects</div>
+                                    </div>
+                                    <div class="bg-green-100 rounded p-1 text-center">
+                                        <div class="text-green-800 font-bold text-sm">3</div>
+                                        <div class="text-xs text-green-600">Internships</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mb-1">Top Skills:</div>
+                                <div class="flex flex-wrap gap-1 mb-2">
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">JavaScript</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">React</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">Documentation</span>
+                                </div>
+                                <div class="text-xs text-purple-600">contrifest.dev/alexjohnson</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+     <footer class="bg-gray-800 text-white pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-medium mb-4">ContriFest</h3>
+                    <p class="text-sm text-gray-300">Gamifying open source contributions to help developers grow their skills and portfolios.</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Features</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Contribution Tracker</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Roadmaps</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Mentor Bot</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Portfolio Generator</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Community</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Forum</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Blog</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Events</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white">Leaderboard</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Connect</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-xs text-gray-400">Subscribe to our newsletter</p>
+                        <div class="mt-2 flex">
+                            <input type="email" placeholder="Your email" class="px-3 py-2 bg-gray-700 text-white text-sm rounded-l focus:outline-none focus:ring-1 focus:ring-purple-500 w-full">
+                            <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-r text-sm">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-sm text-gray-400">© 2023 ContriFest. All rights reserved | Made with ❤ by <a style="color: #6e8efb;" href="https://www.linkedin.com/in/puneet-tiwari-0075952a6/">Puneet Tiwari</a>.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="text-sm text-gray-400 hover:text-white">Privacy</a>
+                    <a href="#" class="text-sm text-gray-400 hover:text-white">Terms</a>
+                    <a href="#" class="text-sm text-gray-400 hover:text-white">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Dark/Light mode toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        // Check for saved user preference or use system preference
+        const userTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (userTheme === 'dark' || (!userTheme && systemTheme)) {
+            html.classList.add('dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun text-yellow-300"></i>';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+            themeToggle.innerHTML = html.classList.contains('dark') 
+                ? '<i class="fas fa-sun text-yellow-300"></i>' 
+                : '<i class="fas fa-moon text-gray-700"></i>';
+        });
+
+        // Simple section switcher
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('[id$="-section"]').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show the selected section
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+            
+            // Update active nav link
+            document.querySelectorAll('nav a').forEach(link => {
+                link.classList.remove('border-primary-500', 'text-gray-900', 'dark:text-white');
+                link.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            });
+            
+            // Set current nav link as active
+            const navLinks = document.querySelectorAll('nav a');
+            if (sectionId === 'dashboard') navLinks[0].classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+            if (sectionId === 'projects') navLinks[1].classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+            if (sectionId === 'community') navLinks[2].classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+            if (sectionId === 'learn') navLinks[3].classList.add('border-primary-500', 'text-gray-900', 'dark:text-white');
+        }
+
+        // Initialize with dashboard visible
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('dashboard');
+        });
+
+        // AI Mentor Bot functionality
+        const mentorResponses = {
+            "hello": "Hi there! How can I help you with your open source contributions today?",
+            "hi": "Hello! I'm here to guide you through your open source journey. What would you like to know?",
+            "help": "I can help you with: 1) Finding beginner-friendly projects, 2) Git/GitHub questions, 3) PR reviews, 4) Contribution roadmaps. What do you need?",
+            "find beginner-friendly projects": "Great! Based on your profile, I recommend these projects: 1) Good First Issues (github.com/good-first-issues), 2) First Contributions (github.com/firstcontributions), 3) Up For Grabs (up-for-grabs.net). Would you like me to filter by a specific technology?",
+            "help with git commands": "Sure! Here are some common Git commands:\n\n- `git clone [url]` - Clone a repository\n- `git checkout -b [branch]` - Create new branch\n- `git add [file]` - Stage changes\n- `git commit -m \"message\"` - Commit changes\n- `git push origin [branch]` - Push to remote\n\nNeed help with a specific command?",
+            "review my recent pr": "I'll analyze your recent PRs. For best practices:\n1) Keep PRs small and focused\n2) Write clear descriptions\n3) Reference related issues\n4) Include tests if applicable\nWould you like me to review a specific PR?",
+            "thanks": "You're welcome! Let me know if you need anything else.",
+            "default": "I'm not sure I understand. Could you rephrase that or ask about something specific like:\n- Finding projects\n- Git help\n- PR reviews\n- Contribution tips"
+        };
+
+        function askMentor(question) {
+            document.getElementById('mentor-input').value = question;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('mentor-input');
+            const message = input.value.trim().toLowerCase();
+            input.value = '';
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Show typing indicator
+            const typingIndicator = document.getElementById('typing-indicator');
+            typingIndicator.style.display = 'flex';
+            
+            // Scroll to bottom
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Simulate thinking delay
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                
+                // Get bot response
+                let response = mentorResponses.default;
+                for (const [key, value] of Object.entries(mentorResponses)) {
+                    if (message.includes(key)) {
+                        response = value;
+                        break;
+                    }
+                }
+                
+                // Add bot response
+                addMessage(response, 'bot');
+                
+                // Scroll to bottom after response
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 100);
+            }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
+        }
+
+        function addMessage(text, sender) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex items-start ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex-1 max-w-xs">
+                        <div class="bg-white bg-opacity-30 text-sm rounded-lg px-4 py-2">
+                            ${text}
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="mr-3">
+                        <div class="bg-white bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center">
+                            <i class="fas fa-robot text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 max-w-xs">
+                        <div class="bg-white bg-opacity-20 text-sm rounded-lg px-4 py-2">
+                            ${text}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
